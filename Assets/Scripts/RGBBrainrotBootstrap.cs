@@ -66,7 +66,7 @@ public sealed class RGBBrainrotBootstrap : MonoBehaviour
     private readonly List<RGBBrainrotNode> nodes = new();
     private readonly List<Light> rgbLights = new();
     private readonly List<SceneColorTarget> sceneColorTargets = new();
-    private readonly MaterialPropertyBlock sceneColorBlock = new();
+    private MaterialPropertyBlock sceneColorBlock;
     private Camera mainCamera;
     private AudioSource musicSource;
     private Transform cameraPivot;
@@ -89,6 +89,7 @@ public sealed class RGBBrainrotBootstrap : MonoBehaviour
 
     private void Awake()
     {
+        sceneColorBlock ??= new MaterialPropertyBlock();
         CreateCameraIfNeeded();
         SetupAudio();
         SetupScene(rebuildOnPlay);
@@ -418,6 +419,8 @@ public sealed class RGBBrainrotBootstrap : MonoBehaviour
             return;
         }
 
+        sceneColorBlock ??= new MaterialPropertyBlock();
+
         float saturation = Mathf.Clamp01(globalSaturation);
         float value = Mathf.Clamp01(globalValue);
         for (int i = 0; i < sceneColorTargets.Count; i++)
@@ -690,7 +693,7 @@ public sealed class RGBBrainrotNode : MonoBehaviour
     private static readonly int EmissiveColor = Shader.PropertyToID("_EmissiveColor");
     private static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
 
-    private readonly MaterialPropertyBlock propertyBlock = new();
+    private MaterialPropertyBlock propertyBlock;
 
     private bool initialized;
     private Renderer cachedRenderer;
@@ -739,6 +742,7 @@ public sealed class RGBBrainrotNode : MonoBehaviour
 
     private void SetupDerivedData()
     {
+        propertyBlock ??= new MaterialPropertyBlock();
         baseLocalPosition = transform.localPosition;
         baseScale = transform.localScale;
         spinAxis = Random.onUnitSphere.normalized;
