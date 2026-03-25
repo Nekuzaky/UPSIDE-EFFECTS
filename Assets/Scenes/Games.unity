@@ -163,7 +163,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66468fbef448f8143bcfb2589bccedcf, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Effects.PsychedelicCustomPassController
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Effects.PsychedelicCustomPassController
   customPassVolume: {fileID: 4355466}
   fullscreenEffectMaterial: {fileID: 2100000, guid: 029fc700911b7044085dab486d2bffc7, type: 2}
   intensitySmoothing: 4
@@ -295,7 +295,7 @@ MonoBehaviour:
     - rid: 2133215847889502513
       type: {class: FullScreenCustomPass, ns: UnityEngine.Rendering.HighDefinition, asm: Unity.RenderPipelines.HighDefinition.Runtime}
       data:
-        m_Name: UPSIDE_EFFECTS Fullscreen Psyche
+        m_Name: MINDRIFT Fullscreen Psyche
         enabled: 1
         targetColorBuffer: 0
         targetDepthBuffer: 0
@@ -365,7 +365,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c2e00a1b0ad1147468ac04cdc0801a91, type: 2}
+  - {fileID: 2100000, guid: 2be4a8b76c3e15b4f9de58db87610eb3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -690,7 +690,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fcbf6bb36079a04caf922985ff3ab80, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Checkpoints.Checkpoint
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Checkpoints.Checkpoint
   checkpointIndex: 1
   checkpointLabel: Low
   respawnAnchor: {fileID: 1693141861}
@@ -1040,96 +1040,6 @@ Transform:
   - {fileID: 1509867577}
   m_Father: {fileID: 1615276880}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &198222357
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 198222358}
-  - component: {fileID: 198222360}
-  - component: {fileID: 198222359}
-  m_Layer: 0
-  m_Name: BackWall
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &198222358
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198222357}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 78, z: 126}
-  m_LocalScale: {x: 160, y: 180, z: 2}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1192869466}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &198222359
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198222357}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: c2e00a1b0ad1147468ac04cdc0801a91, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 1
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &198222360
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198222357}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &202282207
 GameObject:
   m_ObjectHideFlags: 0
@@ -1862,7 +1772,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -2869,7 +2779,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5664dea2173bea34889118d28fc8134d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Core.HeightProgressionManager
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Core.HeightProgressionManager
   playerTransform: {fileID: 1254959659}
   minHeight: 0
   maxHeight: 140
@@ -5764,7 +5674,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bc14ac11aeb2a54d8ebf2b8d0bb6567, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Effects.AudioIntensityDriver
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Effects.AudioIntensityDriver
   masterLoopSource: {fileID: 833452056}
   lowPassFilter: {fileID: 833452055}
   baseVolume: 0.35
@@ -5860,7 +5770,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1f669412f427f2247a64ae430da25adb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Core.AudioManager
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Core.AudioManager
   masterLoopSource: {fileID: 833452056}
   audioIntensityDriver: {fileID: 833452053}
   defaultLoopClip: {fileID: 8300000, guid: 61431e3d379c0bd4891c81f9b9209a96, type: 3}
@@ -6403,7 +6313,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -6987,7 +6897,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fcbf6bb36079a04caf922985ff3ab80, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Checkpoints.Checkpoint
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Checkpoints.Checkpoint
   checkpointIndex: 3
   checkpointLabel: High
   respawnAnchor: {fileID: 847655859}
@@ -7597,7 +7507,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f97fb70c791ff2a4f995a0220e72c8ae, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Effects.CameraSideEffects
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Effects.CameraSideEffects
   maxRollDegrees: 6
   rollFrequency: 0.75
   swayAmplitude: {x: 0.3, y: 0.45}
@@ -8701,7 +8611,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1046eec60eb78b44c844c987a07da264, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Effects.PsychedelicVolumeController
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Effects.PsychedelicVolumeController
   globalVolume: {fileID: 1187757926}
   createMissingOverrides: 1
   intensitySmoothing: 3.5
@@ -8804,11 +8714,11 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  saturationRange: {x: 4, y: 38}
+  saturationRange: {x: 10, y: 42}
   contrastRange: {x: 0, y: 26}
   postExposureRange: {x: 0, y: 0.55}
-  hueJitterAmplitude: 22
-  hueJitterFrequency: 0.8
+  hueJitterAmplitude: 48
+  hueJitterFrequency: 1.7
   vignetteRange: {x: 0.04, y: 0.52}
   grainRange: {x: 0.03, y: 0.62}
   vignetteCurve:
@@ -9000,6 +8910,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1192869466}
+  - component: {fileID: 1192869467}
   m_Layer: 0
   m_Name: Lighting
   m_TagString: Untagged
@@ -9022,9 +8933,36 @@ Transform:
   m_Children:
   - {fileID: 2135865755}
   - {fileID: 1162853640}
-  - {fileID: 198222358}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1192869467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192869465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b78f683f37e474581439ac2eb8709b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DirectionalLightPsychedelicController
+  autoFindDirectionalLights: 1
+  createFallbackLightsIfMissing: 1
+  hueCycleSpeed: 0.22
+  hueOffsetPerLight: 0.27
+  saturation: 1
+  value: 1
+  intensityPulseStrength: 0.45
+  intensityPulseSpeed: 2.4
+  rotateDirectionalLights: 1
+  lightRotationSpeedEuler: {x: 4, y: 10, z: 0}
+  driveAmbientAndFog: 1
+  ambientIntensity: 1.15
+  ambientValue: 0.42
+  fogValue: 0.3
+  fogSaturation: 0.9
+  directionalLights: []
 --- !u!1 &1197399390
 GameObject:
   m_ObjectHideFlags: 0
@@ -9556,7 +9494,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52a1dc641aa59ad46a16c7decd56ea4f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Player.PlayerFallRespawn
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Player.PlayerFallRespawn
   killHeight: -22
   respawnPositionOffset: {x: 0, y: 0.1, z: 0}
   firstPersonMotor: {fileID: 1254959664}
@@ -9605,7 +9543,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5ffbc65b9f4b586488bad7787884b303, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Player.FirstPersonLook
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Player.FirstPersonLook
   yawTransform: {fileID: 1254959659}
   pitchTransform: {fileID: 1668403505}
   inputRouter: {fileID: 0}
@@ -9631,7 +9569,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 61ebd131ddaff0348b306f5487520beb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Player.FirstPersonMotor
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Player.FirstPersonMotor
   movementReference: {fileID: 1254959659}
   inputRouter: {fileID: 0}
   moveSpeed: 8.2
@@ -10849,7 +10787,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c44f03c1b03135c49bd7b8789bb137e6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Checkpoints.CheckpointManager
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Checkpoints.CheckpointManager
   autoCollectCheckpointsFromChildren: 0
   checkpoints:
   - {fileID: 1945000225}
@@ -11927,7 +11865,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f78f863c41a67642ae2d1a9705fd21b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Core.RunSessionManager
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Core.RunSessionManager
   playerFallRespawn: {fileID: 1254959660}
   checkpointManager: {fileID: 1422904269}
   goalZone: {fileID: 2139568785}
@@ -12281,6 +12219,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1564117336}
   - component: {fileID: 1564117337}
+  - component: {fileID: 1564117338}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -12314,11 +12253,37 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc07a84ff86a13e4f9ebbbf01e117f20, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Core.GameManager
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Core.GameManager
   heightProgressionManager: {fileID: 0}
   checkpointManager: {fileID: 0}
   playerFallRespawn: {fileID: 0}
   autoResolveOnAwake: 1
+--- !u!114 &1564117338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1564117335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3d2a5a8a46f4ee9a2bf2d0d9ccf7d15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Core.LivesSystem
+  playerFallRespawn: {fileID: 1254959660}
+  checkpointManager: {fileID: 1422904269}
+  runSessionManager: {fileID: 1547224905}
+  maxLives: 3
+  resetLivesOnRunStart: 1
+  refillLivesAfterDepletion: 1
+  returnToDefaultCheckpointOnDepletion: 1
+  notifyCheckpointOnForcedReturn: 1
+  showDeathScreenOnDepletion: 1
+  pauseTimeDuringGameOver: 1
+  disablePlayerControlDuringGameOver: 1
+  firstPersonMotor: {fileID: 1254959664}
+  firstPersonLook: {fileID: 1254959663}
+  logEvents: 0
 --- !u!1 &1568662954
 GameObject:
   m_ObjectHideFlags: 0
@@ -12365,7 +12330,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bdf3bfdc0d59a56489a40788f824167f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.MovingPlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.MovingPlatform
   motionMode: 0
   cycleDuration: 2.1
   phaseOffset: 0.64
@@ -12522,7 +12487,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fcbf6bb36079a04caf922985ff3ab80, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Checkpoints.Checkpoint
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Checkpoints.Checkpoint
   checkpointIndex: 2
   checkpointLabel: Mid
   respawnAnchor: {fileID: 1581750599}
@@ -12737,7 +12702,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -12873,7 +12838,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bdf3bfdc0d59a56489a40788f824167f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.MovingPlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.MovingPlatform
   motionMode: 0
   cycleDuration: 2.45
   phaseOffset: 0.32
@@ -14008,6 +13973,7 @@ GameObject:
   - component: {fileID: 1666756167}
   - component: {fileID: 1666756165}
   - component: {fileID: 1666756166}
+  - component: {fileID: 1666756170}
   m_Layer: 0
   m_Name: GameplayCanvas
   m_TagString: Untagged
@@ -14024,7 +13990,7 @@ RectTransform:
   m_GameObject: {fileID: 1666756163}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1803463756}
@@ -14052,7 +14018,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8600bfba65cc22442a05dd40cdf45878, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.UI.SideEffectUI
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.UI.SideEffectUI
   sideEffectsTextComponent: {fileID: 654426760}
   warningTextComponent: {fileID: 259549542}
   statusTextComponent: {fileID: 1627670469}
@@ -14095,13 +14061,37 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 169e41e84533f1a44a18529994978ea1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.UI.RunHUD
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.UI.RunHUD
   runSessionManager: {fileID: 1547224905}
+  livesSystem: {fileID: 1564117338}
   timerTextComponent: {fileID: 1612962939}
   summaryTextComponent: {fileID: 693608327}
   summaryCanvasGroup: {fileID: 693608326}
   timerPrefix: RUN
+  livesPrefix: LIVES
   completedPrefix: RUN COMPLETE
+--- !u!114 &1666756170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666756163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31f929fd3f56445a83f5c526f185026d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.UI.DeathScreenUI
+  livesSystem: {fileID: 1564117338}
+  messageTextComponent: {fileID: 693608327}
+  overlayCanvasGroup: {fileID: 693608326}
+  titleText: NEURAL COLLAPSE
+  subText: LIVES DEPLETED
+  retryText: PRESS R TO RETRY
+  menuText: PRESS M FOR MAIN MENU
+  retryKey: 114
+  menuKey: 109
+  mainMenuSceneName: MainMenu
 --- !u!114 &1666756167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14879,7 +14869,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fbbcfdacc09d6004c90fd8650728fe23, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.UI.CheckpointUI
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.UI.CheckpointUI
   checkpointTextComponent: {fileID: 1694018441}
   checkpointCanvasGroup: {fileID: 1694018440}
   prefix: CHECKPOINT
@@ -14986,7 +14976,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d34c02332b9cc045b94da427b4ad514, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.PlatformFlicker
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.PlatformFlicker
   targetRenderers: []
   baseFrequency: 12
   maxFrequency: 28
@@ -15003,7 +14993,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -15363,7 +15353,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bdf3bfdc0d59a56489a40788f824167f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.MovingPlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.MovingPlatform
   motionMode: 0
   cycleDuration: 2.8
   phaseOffset: 0
@@ -15632,7 +15622,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bdf3bfdc0d59a56489a40788f824167f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.MovingPlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.MovingPlatform
   motionMode: 0
   cycleDuration: 1.75
   phaseOffset: 0.96
@@ -15792,7 +15782,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5aea50ca437c7a64fa39b96012fdc08e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.UI.HUDAltitude
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.UI.HUDAltitude
   playerTransform: {fileID: 1254959659}
   altitudeTextComponent: {fileID: 1803463758}
   prefix: ALTITUDE
@@ -15887,7 +15877,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d34c02332b9cc045b94da427b4ad514, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.PlatformFlicker
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.PlatformFlicker
   targetRenderers: []
   baseFrequency: 13
   maxFrequency: 30
@@ -15904,7 +15894,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -16488,7 +16478,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fcbf6bb36079a04caf922985ff3ab80, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.Checkpoints.Checkpoint
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.Checkpoints.Checkpoint
   checkpointIndex: 0
   checkpointLabel: Start
   respawnAnchor: {fileID: 1298172861}
@@ -17082,7 +17072,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d34c02332b9cc045b94da427b4ad514, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.PlatformFlicker
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.PlatformFlicker
   targetRenderers: []
   baseFrequency: 14
   maxFrequency: 32
@@ -17099,7 +17089,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5d257fd33c7d54eb65c29c7a8c0b2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.FakePlatform
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.FakePlatform
   platformCollider: {fileID: 0}
   renderers: []
   behaviorMode: 2
@@ -17464,6 +17454,7 @@ GameObject:
   - component: {fileID: 2135865757}
   - component: {fileID: 2135865756}
   - component: {fileID: 2135865758}
+  - component: {fileID: 2135865759}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -17639,7 +17630,7 @@ Light:
   serializedVersion: 12
   m_Type: 1
   m_Color: {r: 0.9, g: 0.88, b: 1, a: 1}
-  m_Intensity: 38670.22
+  m_Intensity: 54932.44
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -17682,8 +17673,8 @@ Light:
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
-  m_ColorTemperature: 6570
-  m_UseColorTemperature: 0
+  m_ColorTemperature: 1718
+  m_UseColorTemperature: 1
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
@@ -17715,6 +17706,23 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2135865759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2135865754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 0}
 --- !u!1 &2138127601
 GameObject:
   m_ObjectHideFlags: 0
@@ -17856,7 +17864,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ba25206a7ec52b4885618bd03e81273, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UpsideEffects.World.GoalZone
+  m_EditorClassIdentifier: Assembly-CSharp::Mindrift.World.GoalZone
   oneShot: 1
   requiredTag: Player
 --- !u!65 &2139568786
