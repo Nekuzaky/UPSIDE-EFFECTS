@@ -645,7 +645,9 @@ public sealed class RGBBrainrotBootstrap : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR
         TryAutoAssignMusicClipInEditor();
+#endif
         CreateCameraIfNeeded();
         SetupScene(forceRebuild: true);
     }

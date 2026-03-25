@@ -17,6 +17,7 @@ namespace Mindrift.UI
         [SerializeField] private string timerPrefix = "RUN";
         [SerializeField] private string livesPrefix = "LIVES";
         [SerializeField] private string completedPrefix = "RUN COMPLETE";
+        [SerializeField] private bool includeLivesInTimer = true;
 
         private void Awake()
         {
@@ -81,7 +82,7 @@ namespace Mindrift.UI
             }
 
             string timerText = $"{timerPrefix}: {RunSessionManager.FormatTime(elapsed)}";
-            if (livesSystem != null)
+            if (includeLivesInTimer && livesSystem != null)
             {
                 timerText += $"  |  {livesPrefix}: {livesSystem.CurrentLives}/{livesSystem.MaxLives}";
             }
