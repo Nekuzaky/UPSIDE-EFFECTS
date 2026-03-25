@@ -31,6 +31,8 @@ namespace Mindrift.Effects
 
         private float intensity;
         private float nextStingerTime;
+        private float menuMusicVolumeScale = 1f;
+        private float menuSfxVolumeScale = 1f;
 
         public float Intensity => intensity;
         public SideEffectStage CurrentStage { get; private set; } = SideEffectStage.Stable;
@@ -54,7 +56,7 @@ namespace Mindrift.Effects
             {
                 float volumeT = Mathf.Clamp01(volumeCurve.Evaluate(intensity));
                 float pitchT = Mathf.Clamp01(pitchCurve.Evaluate(intensity));
-                masterLoopSource.volume = Mathf.Lerp(baseVolume, maxVolume, volumeT);
+                masterLoopSource.volume = Mathf.Lerp(baseVolume, maxVolume, volumeT) * menuMusicVolumeScale;
                 masterLoopSource.pitch = Mathf.Lerp(basePitch, maxPitch, pitchT);
             }
 
@@ -92,8 +94,14 @@ namespace Mindrift.Effects
                 return;
             }
 
-            masterLoopSource.PlayOneShot(clip, stingerVolume);
+            masterLoopSource.PlayOneShot(clip, stingerVolume * menuSfxVolumeScale);
             nextStingerTime = Time.time + minStingerCooldown;
+        }
+
+        public void ApplyMenuVolumeSettings(float musicVolume, float sfxVolume)
+        {
+            menuMusicVolumeScale = Mathf.Clamp01(musicVolume);
+            menuSfxVolumeScale = Mathf.Clamp01(sfxVolume);
         }
     }
 }

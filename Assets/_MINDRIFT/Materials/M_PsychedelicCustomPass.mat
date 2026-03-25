@@ -25,7 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _UE_Intensity: 0.00000043133085
+    - _UE_Intensity: 0.00000043134133
     - _UE_PulseSpeed: 0.8000016
     - _UE_RGBSplit: 0.0008
     - _UE_ScanStrength: 0.01

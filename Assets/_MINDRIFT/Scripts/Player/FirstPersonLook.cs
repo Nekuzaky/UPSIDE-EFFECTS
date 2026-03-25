@@ -33,6 +33,9 @@ namespace Mindrift.Player
         private float yaw;
         private float pitch;
         private Vector2 smoothedInput;
+        private bool controllerDefaultsCached;
+        private float defaultGamepadLookSpeedX;
+        private float defaultGamepadLookSpeedY;
 
         private void Awake()
         {
@@ -55,6 +58,8 @@ namespace Mindrift.Player
             Vector3 pitchEuler = pitchTransform.localEulerAngles;
             yaw = yawEuler.y;
             pitch = NormalizePitch(pitchEuler.x);
+
+            CacheControllerDefaults();
         }
 
         private void Start()
@@ -123,6 +128,17 @@ namespace Mindrift.Player
         {
             Cursor.visible = !shouldLock;
             Cursor.lockState = shouldLock ? CursorLockMode.Locked : CursorLockMode.None;
+        }
+
+        public void ApplyControllerOptions(float sensitivityMultiplier, bool invertYAxis, float deadzone)
+        {
+            CacheControllerDefaults();
+
+            float safeMultiplier = Mathf.Clamp(sensitivityMultiplier, 0.4f, 2f);
+            gamepadLookSpeedX = defaultGamepadLookSpeedX * safeMultiplier;
+            gamepadLookSpeedY = defaultGamepadLookSpeedY * safeMultiplier;
+            gamepadLookDeadzone = Mathf.Clamp(deadzone, 0f, 0.5f);
+            invertY = invertYAxis;
         }
 
         private bool IsUnlockPressed()
@@ -212,6 +228,18 @@ namespace Mindrift.Player
             }
 
             return value;
+        }
+
+        private void CacheControllerDefaults()
+        {
+            if (controllerDefaultsCached)
+            {
+                return;
+            }
+
+            controllerDefaultsCached = true;
+            defaultGamepadLookSpeedX = gamepadLookSpeedX;
+            defaultGamepadLookSpeedY = gamepadLookSpeedY;
         }
     }
 }

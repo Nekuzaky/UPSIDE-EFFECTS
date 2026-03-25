@@ -21,8 +21,9 @@ namespace Mindrift.UI
         [SerializeField] private string mainMenuSceneFallbackName = "MainMenu";
 
         [Header("Input")]
-        [SerializeField] private bool allowPauseKey = true;
-        [SerializeField] private KeyCode pauseKey = KeyCode.Escape;
+        [SerializeField] private bool allowPauseInput = true;
+        [SerializeField] private bool keyboardEscapePauses = true;
+        [SerializeField] private bool gamepadStartPauses = true;
 
         [Header("References")]
         [SerializeField] private LivesSystem livesSystem;
@@ -76,12 +77,20 @@ namespace Mindrift.UI
 
         private void Update()
         {
-            if (!allowPauseKey || !IsKeyPressed(pauseKey))
+            if (!allowPauseInput)
             {
                 return;
             }
 
-            TogglePause();
+            if (isPaused && OptionsMenuController.IsAnyMenuOpen)
+            {
+                return;
+            }
+
+            if (WasPausePressedThisFrame())
+            {
+                TogglePause();
+            }
         }
 
         public void TogglePause()
@@ -131,6 +140,12 @@ namespace Mindrift.UI
             Time.timeScale = cachedTimeScale <= 0f ? 1f : cachedTimeScale;
             UnloadPauseSceneIfLoaded();
             ApplyGameplayControl(true);
+
+            if (firstPersonLook == null)
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
         }
 
         public void LoadMainMenu()
@@ -301,45 +316,15 @@ namespace Mindrift.UI
             return false;
         }
 
-        private static bool IsKeyPressed(KeyCode keyCode)
+        private bool WasPausePressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && TryMapKeyCode(keyCode, out Key mappedKey))
-            {
-                var keyControl = Keyboard.current[mappedKey];
-                if (keyControl != null && keyControl.wasPressedThisFrame)
-                {
-                    return true;
-                }
-            }
-#endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetKeyDown(keyCode);
+            bool keyboardPressed = keyboardEscapePauses && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+            bool gamepadPressed = gamepadStartPauses && Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame;
+            return keyboardPressed || gamepadPressed;
 #else
             return false;
 #endif
-        }
-
-        private static bool TryMapKeyCode(KeyCode keyCode, out Key key)
-        {
-            switch (keyCode)
-            {
-                case KeyCode.Escape:
-                    key = Key.Escape;
-                    return true;
-                case KeyCode.Return:
-                    key = Key.Enter;
-                    return true;
-                case KeyCode.Space:
-                    key = Key.Space;
-                    return true;
-                case KeyCode.M:
-                    key = Key.M;
-                    return true;
-                default:
-                    key = Key.None;
-                    return false;
-            }
         }
     }
 }
