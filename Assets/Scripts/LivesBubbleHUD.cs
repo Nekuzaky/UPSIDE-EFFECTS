@@ -11,6 +11,8 @@ using UnityEditor;
 [DefaultExecutionOrder(-6400)]
 public sealed class LivesBubbleHUD : MonoBehaviour
 {
+    private const int PreviewLivesCap = 3;
+
     [Header("Auto")]
     [SerializeField] private bool buildInEditMode = true;
     [SerializeField] private bool autoFindReferences = true;
@@ -41,7 +43,7 @@ public sealed class LivesBubbleHUD : MonoBehaviour
 
     [Header("Editor Preview")]
     [SerializeField] private int previewLives = 3;
-    [SerializeField] private int previewMaxLives = 3;
+    [SerializeField, Range(1, PreviewLivesCap)] private int previewMaxLives = 3;
 
     private RectTransform rootRect;
     private Text labelText;
@@ -83,7 +85,8 @@ public sealed class LivesBubbleHUD : MonoBehaviour
     private void OnValidate()
     {
         previewLives = Mathf.Max(0, previewLives);
-        previewMaxLives = Mathf.Max(1, previewMaxLives);
+        previewMaxLives = Mathf.Clamp(previewMaxLives, 1, PreviewLivesCap);
+        previewLives = Mathf.Clamp(previewLives, 0, previewMaxLives);
         TryAutoAssignLifeSprite();
         needsRebuild = true;
         QueueEditorRebuild();
@@ -295,6 +298,8 @@ public sealed class LivesBubbleHUD : MonoBehaviour
         layout.childForceExpandHeight = false;
         layout.reverseArrangement = false;
         layout.padding = new RectOffset(0, 0, 0, 0);
+
+        SyncBubbleCacheFromHierarchy();
     }
 
     private void UpdateBubbles(int currentLives, int maxLives, float time)
@@ -367,6 +372,8 @@ public sealed class LivesBubbleHUD : MonoBehaviour
                 }
             }
         }
+
+        RenameBubbles();
     }
 
     private void CreateBubble(int index)
@@ -402,6 +409,47 @@ public sealed class LivesBubbleHUD : MonoBehaviour
         glow.useGraphicAlpha = true;
 
         bubbles.Add(image);
+    }
+
+    private void SyncBubbleCacheFromHierarchy()
+    {
+        bubbles.Clear();
+        if (rowRect == null)
+        {
+            return;
+        }
+
+        int childCount = rowRect.childCount;
+        for (int i = 0; i < childCount; i++)
+        {
+            Transform child = rowRect.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            Image image = child.GetComponent<Image>();
+            if (image == null)
+            {
+                continue;
+            }
+
+            bubbles.Add(image);
+        }
+    }
+
+    private void RenameBubbles()
+    {
+        for (int i = 0; i < bubbles.Count; i++)
+        {
+            Image bubble = bubbles[i];
+            if (bubble == null)
+            {
+                continue;
+            }
+
+            bubble.gameObject.name = $"Bubble_{i + 1}";
+        }
     }
 
     private void ApplyLifeSprite(Image image)
