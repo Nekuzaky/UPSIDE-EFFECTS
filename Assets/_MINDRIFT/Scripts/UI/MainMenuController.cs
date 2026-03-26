@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Mindrift.Auth;
@@ -38,6 +39,10 @@ namespace Mindrift.UI
         [SerializeField] private string footerHintText = "KEYBOARD: ARROWS/WASD + ENTER  |  CONTROLLER: DPAD/STICK + A";
         [SerializeField] private string websiteUrl = "https://nekuzaky.com/mindrift";
         [SerializeField] private string websiteLabel = "WEBSITE: nekuzaky.com/mindrift";
+
+        [Header("Presentation")]
+        [SerializeField] private float startTransitionDuration = 0.25f;
+        [SerializeField] private Color startTransitionColor = new Color(0.01f, 0.03f, 0.08f, 1f);
 
         [Header("Auth")]
         [SerializeField] private string authGuestHintText = "Create a local account now. Your site API can replace this service later.";
@@ -80,7 +85,15 @@ namespace Mindrift.UI
         private Text totalDeathsValueText;
         private Text topScoreValueText;
         private Text topHeightValueText;
+        private RectTransform menuLayoutRoot;
+        private GameObject rightInfoPanel;
+        private Image backgroundOverlay;
+        private Image sceneTransitionOverlay;
+        private MainMenuAtmosphereFx atmosphereFx;
         private Vector2 lastKnownCanvasSize;
+        private float nextLogoGlitchAt = 1.5f;
+        private float logoGlitchUntil;
+        private bool isSceneTransitionRunning;
 
         private void Awake()
         {
@@ -94,6 +107,8 @@ namespace Mindrift.UI
             Cursor.lockState = CursorLockMode.None;
 
             ResolveReferences();
+            atmosphereFx = MainMenuAtmosphereFx.EnsureForCanvas(transform);
+            EnsureSceneTransitionOverlay();
             ConfigureHierarchyStyle();
             ApplyResponsiveLayout(force: true);
             ApplyCyberpunkTheme();
@@ -120,8 +135,12 @@ namespace Mindrift.UI
 
         private void OnEnable()
         {
+            isSceneTransitionRunning = false;
+            SetPrimaryButtonsInteractable(true);
+            EnsureSceneTransitionOverlay();
             HookEvents();
             SubscribeAuthEvents(true);
+            atmosphereFx = MainMenuAtmosphereFx.EnsureForCanvas(transform);
             MenuNavigationController.SelectDefault(this, startButton);
             ApplyResponsiveLayout(force: true);
             ApplyCyberpunkTheme();
@@ -134,10 +153,17 @@ namespace Mindrift.UI
         {
             SubscribeAuthEvents(false);
             UnhookEvents();
+            isSceneTransitionRunning = false;
+            SetPrimaryButtonsInteractable(true);
         }
 
         public void StartGame()
         {
+            if (isSceneTransitionRunning)
+            {
+                return;
+            }
+
             Time.timeScale = 1f;
 
             if (!IsSceneInBuildSettings(gameplaySceneName))
@@ -146,7 +172,7 @@ namespace Mindrift.UI
                 return;
             }
 
-            SceneManager.LoadScene(gameplaySceneName);
+            StartCoroutine(StartGameTransitionRoutine());
         }
 
         public void OpenOptions()
@@ -171,6 +197,87 @@ namespace Mindrift.UI
         private void Update()
         {
             ApplyResponsiveLayout(force: false);
+            UpdateLogoGlitch();
+        }
+
+        private IEnumerator StartGameTransitionRoutine()
+        {
+            isSceneTransitionRunning = true;
+            SetPrimaryButtonsInteractable(false);
+            EnsureSceneTransitionOverlay();
+
+            if (sceneTransitionOverlay != null)
+            {
+                float duration = Mathf.Max(0.01f, startTransitionDuration);
+                Color color = startTransitionColor;
+                color.a = 0f;
+                sceneTransitionOverlay.color = color;
+                sceneTransitionOverlay.transform.SetAsLastSibling();
+
+                float elapsed = 0f;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float t = Mathf.Clamp01(elapsed / duration);
+                    color.a = Mathf.SmoothStep(0f, 1f, t);
+                    sceneTransitionOverlay.color = color;
+                    yield return null;
+                }
+
+                color.a = 1f;
+                sceneTransitionOverlay.color = color;
+            }
+
+            SceneManager.LoadScene(gameplaySceneName);
+        }
+
+        private void SetPrimaryButtonsInteractable(bool interactable)
+        {
+            if (startButton != null)
+            {
+                startButton.interactable = interactable;
+            }
+
+            if (optionsButton != null)
+            {
+                optionsButton.interactable = interactable;
+            }
+
+            if (quitButton != null)
+            {
+                quitButton.interactable = interactable;
+            }
+        }
+
+        private void EnsureSceneTransitionOverlay()
+        {
+            GameObject overlayObject = FindChild(transform, "SceneTransitionOverlay");
+            if (overlayObject == null)
+            {
+                overlayObject = CreateUiObject("SceneTransitionOverlay", transform, typeof(Image));
+            }
+
+            sceneTransitionOverlay = overlayObject.GetComponent<Image>();
+            if (sceneTransitionOverlay == null)
+            {
+                sceneTransitionOverlay = overlayObject.AddComponent<Image>();
+            }
+
+            sceneTransitionOverlay.raycastTarget = false;
+
+            RectTransform rect = overlayObject.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            Color color = startTransitionColor;
+            color.a = 0f;
+            sceneTransitionOverlay.color = color;
+            overlayObject.transform.SetAsLastSibling();
         }
 
         private void ResolveReferences()
@@ -196,18 +303,17 @@ namespace Mindrift.UI
                 subtitle.fontSize = 28;
             }
 
+            EnsureBackgroundOverlay();
             EnsureFooterHints();
             EnsureAuthPanel();
             EnsureLeaderboardPanel();
             EnsureStatsPanel();
+            EnsureCenterMenuLayout();
+            EnsureRightInfoPanel();
         }
 
         private void ConfigureHierarchyStyle()
         {
-            PositionButton(startButton, 0.49f);
-            PositionButton(optionsButton, 0.39f);
-            PositionButton(quitButton, 0.29f);
-
             StyleButton(startButton);
             StyleButton(optionsButton);
             StyleButton(quitButton);
@@ -217,9 +323,10 @@ namespace Mindrift.UI
         {
             StyleBranding();
             StyleMenuFrame();
-            StylePanelShell(FindChild(transform, "LeaderboardPanel"), new Color(0.1f, 0.95f, 1f, 0.92f), new Color(1f, 0.18f, 0.72f, 0.72f), 0.66f);
-            StylePanelShell(FindChild(transform, "AuthPanel"), new Color(0.16f, 0.97f, 0.98f, 0.95f), new Color(1f, 0.3f, 0.68f, 0.7f), 0.72f);
-            StylePanelShell(FindChild(transform, "StatsPanel"), new Color(0.12f, 0.95f, 1f, 0.92f), new Color(1f, 0.74f, 0.28f, 0.8f), 0.68f);
+            StylePanelShell(FindChild(transform, "LeaderboardPanel"), new Color(0.12f, 1f, 0.98f, 0.48f), new Color(1f, 0.18f, 0.72f, 0.85f), 0.5f);
+            StylePanelShell(rightInfoPanel, new Color(0.12f, 1f, 0.98f, 0.48f), new Color(1f, 0.18f, 0.72f, 0.85f), 0.5f);
+            StyleSubPanel(FindChild(rightInfoPanel != null ? rightInfoPanel.transform : null, "AuthPanel"));
+            StyleSubPanel(FindChild(rightInfoPanel != null ? rightInfoPanel.transform : null, "StatsPanel"));
             StyleButton(startButton);
             StyleButton(optionsButton);
             StyleButton(quitButton);
@@ -241,31 +348,19 @@ namespace Mindrift.UI
 
             float width = Mathf.Max(1f, canvasSize.x);
             float height = Mathf.Max(1f, canvasSize.y);
-            float aspect = width / height;
-            bool compact = width < 1500f || aspect < 1.65f;
-            bool narrow = width < 1180f || aspect < 1.42f;
+            bool compact = width < 1440f || height < 900f;
 
-            LayoutBranding(width, height, compact);
-            LayoutMenuColumn(width, height, compact, narrow);
-            LayoutLeaderboardPanel(width, height, compact, narrow);
-            LayoutAuthAndStatsPanels(width, height, compact, narrow);
-            LayoutFooter(width, compact, narrow);
+            LayoutBackgroundOverlay();
+            LayoutBranding(compact);
+            LayoutMenuColumn();
+            LayoutLeaderboardPanel(compact);
+            LayoutAuthAndStatsPanels(compact);
+            LayoutFooter(compact);
         }
 
         private void ConfigureButtonNavigation()
         {
-            List<Selectable> navigationOrder = new List<Selectable>();
-            if (startButton != null) navigationOrder.Add(startButton);
-            if (optionsButton != null) navigationOrder.Add(optionsButton);
-            if (quitButton != null) navigationOrder.Add(quitButton);
-            AddSelectableIfActive(navigationOrder, authUsernameInput);
-            AddSelectableIfActive(navigationOrder, authIdentifierInput);
-            AddSelectableIfActive(navigationOrder, authPasswordInput);
-            AddSelectableIfActive(navigationOrder, authSignInButton);
-            AddSelectableIfActive(navigationOrder, authRegisterButton);
-            AddSelectableIfActive(navigationOrder, authSignOutButton);
-            AddSelectableIfActive(navigationOrder, footerLinkButton);
-            MenuNavigationController.ApplyVerticalNavigation(navigationOrder);
+            ConfigurePrimaryNavigation();
         }
 
         private void SubscribeAuthEvents(bool subscribe)
@@ -483,27 +578,67 @@ namespace Mindrift.UI
             Image image = button.GetComponent<Image>();
             if (image != null)
             {
-                image.color = new Color(0.02f, 0.05f, 0.1f, 0.78f);
+                image.color = new Color(0.03f, 0.05f, 0.08f, 0.88f);
             }
 
             ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.02f, 0.05f, 0.1f, 0.78f);
-            colors.highlightedColor = new Color(0.07f, 0.16f, 0.26f, 0.92f);
-            colors.selectedColor = new Color(0.08f, 0.2f, 0.31f, 0.96f);
-            colors.pressedColor = new Color(0.05f, 0.12f, 0.2f, 0.98f);
+            colors.normalColor = new Color(0.03f, 0.05f, 0.08f, 0.88f);
+            colors.highlightedColor = new Color(0.08f, 0.12f, 0.18f, 0.94f);
+            colors.selectedColor = new Color(0.08f, 0.12f, 0.18f, 0.94f);
+            colors.pressedColor = new Color(0.16f, 0.28f, 0.36f, 0.98f);
             colors.disabledColor = new Color(0.22f, 0.22f, 0.22f, 0.48f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            if (button.GetComponent<MenuSelectableFeedback>() == null)
+            MenuSelectableFeedback feedback = button.GetComponent<MenuSelectableFeedback>();
+            if (feedback != null)
             {
-                button.gameObject.AddComponent<MenuSelectableFeedback>();
+                if (Application.isPlaying)
+                {
+                    Destroy(feedback);
+                }
+                else
+                {
+                    DestroyImmediate(feedback);
+                }
             }
 
-            EnsureDecorImage(button.transform, "TopAccent", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(10f, -2f), new Vector2(-34f, 0f), new Color(0.12f, 1f, 0.98f, 0.95f));
-            EnsureDecorImage(button.transform, "BottomAccent", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(30f, 0f), new Vector2(-8f, 2f), new Color(1f, 0.2f, 0.72f, 0.74f));
-            EnsureDecorImage(button.transform, "SideAccent", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-3f, 12f), new Vector2(0f, -12f), new Color(0.12f, 1f, 0.98f, 0.48f));
-            EnsureDecorImage(button.transform, "CornerNode", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -12f), new Vector2(16f, 0f), new Color(1f, 0.2f, 0.72f, 0.74f));
+            Outline outline = image != null ? image.GetComponent<Outline>() : null;
+            if (outline == null && image != null)
+            {
+                outline = image.gameObject.AddComponent<Outline>();
+            }
+
+            if (outline != null)
+            {
+                outline.effectColor = new Color(0.12f, 1f, 0.98f, 0.58f);
+                outline.effectDistance = new Vector2(1f, -1f);
+                outline.useGraphicAlpha = true;
+            }
+
+            Shadow shadow = image != null ? image.GetComponent<Shadow>() : null;
+            if (shadow == null && image != null)
+            {
+                shadow = image.gameObject.AddComponent<Shadow>();
+            }
+
+            if (shadow != null)
+            {
+                shadow.effectColor = new Color(0.12f, 1f, 0.98f, 0.08f);
+                shadow.effectDistance = Vector2.zero;
+                shadow.useGraphicAlpha = true;
+            }
+
+            SetDecorActive(button.transform, "TopAccent", false);
+            SetDecorActive(button.transform, "BottomAccent", false);
+            SetDecorActive(button.transform, "SideAccent", false);
+            SetDecorActive(button.transform, "CornerNode", false);
+
+            MainMenuButtonFx buttonFx = button.GetComponent<MainMenuButtonFx>();
+            if (buttonFx == null)
+            {
+                buttonFx = button.gameObject.AddComponent<MainMenuButtonFx>();
+            }
         }
 
         private static void AddSelectableIfActive(List<Selectable> navigationOrder, Selectable selectable)
@@ -583,6 +718,276 @@ namespace Mindrift.UI
             rect.offsetMax = new Vector2(0f, top);
         }
 
+        private void EnsureBackgroundOverlay()
+        {
+            GameObject overlayObject = FindChild(transform, "BackgroundOverlay");
+            if (overlayObject == null)
+            {
+                overlayObject = CreateUiObject("BackgroundOverlay", transform, typeof(Image));
+            }
+
+            backgroundOverlay = overlayObject.GetComponent<Image>();
+            backgroundOverlay.raycastTarget = false;
+
+            RectTransform rect = overlayObject.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            Transform background = transform.Find("Background");
+            if (background != null)
+            {
+                overlayObject.transform.SetSiblingIndex(background.GetSiblingIndex() + 1);
+            }
+            else
+            {
+                overlayObject.transform.SetAsFirstSibling();
+            }
+        }
+
+        private void EnsureCenterMenuLayout()
+        {
+            GameObject menuPanelObject = FindChild(transform, "MenuPanel");
+            if (menuPanelObject == null)
+            {
+                menuPanelObject = CreateUiObject("MenuPanel", transform, typeof(Image));
+            }
+
+            Transform menuPanel = menuPanelObject.transform;
+            if (menuPanel == null)
+            {
+                return;
+            }
+
+            Image panelImage = menuPanel.GetComponent<Image>();
+            if (panelImage != null)
+            {
+                panelImage.raycastTarget = false;
+            }
+
+            menuLayoutRoot = menuPanel as RectTransform;
+            VerticalLayoutGroup layoutGroup = menuPanel.GetComponent<VerticalLayoutGroup>();
+            if (layoutGroup == null)
+            {
+                layoutGroup = menuPanel.gameObject.AddComponent<VerticalLayoutGroup>();
+            }
+
+            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+            layoutGroup.childControlWidth = true;
+            layoutGroup.childControlHeight = true;
+            layoutGroup.childForceExpandWidth = false;
+            layoutGroup.childForceExpandHeight = false;
+            layoutGroup.spacing = 26f;
+            layoutGroup.padding = new RectOffset(0, 0, 0, 0);
+
+            ContentSizeFitter fitter = menuPanel.GetComponent<ContentSizeFitter>();
+            if (fitter == null)
+            {
+                fitter = menuPanel.gameObject.AddComponent<ContentSizeFitter>();
+            }
+
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            MoveButtonToMenuPanel(startButton, menuPanel);
+            MoveButtonToMenuPanel(optionsButton, menuPanel);
+            MoveButtonToMenuPanel(quitButton, menuPanel);
+        }
+
+        private void EnsureRightInfoPanel()
+        {
+            rightInfoPanel = FindChild(transform, "RightInfoPanel");
+            if (rightInfoPanel == null)
+            {
+                rightInfoPanel = CreateUiObject("RightInfoPanel", transform, typeof(Image));
+            }
+
+            Image image = rightInfoPanel.GetComponent<Image>();
+            if (image != null)
+            {
+                image.raycastTarget = false;
+            }
+
+            EnsureUniquePanelUnderRightInfo("AuthPanel");
+            EnsureUniquePanelUnderRightInfo("StatsPanel");
+        }
+
+        private void EnsureUniquePanelUnderRightInfo(string panelName)
+        {
+            if (rightInfoPanel == null || string.IsNullOrWhiteSpace(panelName))
+            {
+                return;
+            }
+
+            List<Transform> matches = new List<Transform>();
+            CollectChildrenByName(transform, panelName, matches);
+            if (matches.Count == 0)
+            {
+                return;
+            }
+
+            Transform panelToKeep = null;
+            for (int i = 0; i < matches.Count; i++)
+            {
+                if (matches[i] != null && matches[i].parent == rightInfoPanel.transform)
+                {
+                    panelToKeep = matches[i];
+                    break;
+                }
+            }
+
+            panelToKeep ??= matches[0];
+            if (panelToKeep != null && panelToKeep.parent != rightInfoPanel.transform)
+            {
+                panelToKeep.SetParent(rightInfoPanel.transform, false);
+            }
+
+            for (int i = 0; i < matches.Count; i++)
+            {
+                Transform duplicate = matches[i];
+                if (duplicate == null || duplicate == panelToKeep)
+                {
+                    continue;
+                }
+
+                if (Application.isPlaying)
+                {
+                    Destroy(duplicate.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(duplicate.gameObject);
+                }
+            }
+        }
+
+        private static void CollectChildrenByName(Transform parent, string name, List<Transform> result)
+        {
+            if (parent == null || result == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+                if (string.Equals(child.name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add(child);
+                }
+
+                CollectChildrenByName(child, name, result);
+            }
+        }
+
+        private static void MoveButtonToMenuPanel(Button button, Transform menuPanel)
+        {
+            if (button == null || menuPanel == null)
+            {
+                return;
+            }
+
+            if (button.transform.parent != menuPanel)
+            {
+                button.transform.SetParent(menuPanel, false);
+            }
+        }
+
+        private static void ApplyButtonLayout(Button button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            RectTransform rect = button.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = Vector2.zero;
+                rect.sizeDelta = new Vector2(420f, 74f);
+            }
+
+            LayoutElement layoutElement = button.GetComponent<LayoutElement>();
+            if (layoutElement == null)
+            {
+                layoutElement = button.gameObject.AddComponent<LayoutElement>();
+            }
+
+            layoutElement.preferredWidth = 420f;
+            layoutElement.preferredHeight = 74f;
+            layoutElement.minWidth = 420f;
+            layoutElement.minHeight = 74f;
+            layoutElement.flexibleHeight = 0f;
+            layoutElement.flexibleWidth = 0f;
+        }
+
+        private void ConfigurePrimaryNavigation()
+        {
+            if (startButton != null)
+            {
+                Navigation navigation = startButton.navigation;
+                navigation.mode = Navigation.Mode.Explicit;
+                navigation.selectOnDown = optionsButton;
+                navigation.selectOnUp = null;
+                navigation.selectOnLeft = null;
+                navigation.selectOnRight = null;
+                startButton.navigation = navigation;
+            }
+
+            if (optionsButton != null)
+            {
+                Navigation navigation = optionsButton.navigation;
+                navigation.mode = Navigation.Mode.Explicit;
+                navigation.selectOnUp = startButton;
+                navigation.selectOnDown = quitButton;
+                navigation.selectOnLeft = null;
+                navigation.selectOnRight = null;
+                optionsButton.navigation = navigation;
+            }
+
+            if (quitButton != null)
+            {
+                Navigation navigation = quitButton.navigation;
+                navigation.mode = Navigation.Mode.Explicit;
+                navigation.selectOnUp = optionsButton;
+                navigation.selectOnDown = null;
+                navigation.selectOnLeft = null;
+                navigation.selectOnRight = null;
+                quitButton.navigation = navigation;
+            }
+        }
+
+        private void UpdateLogoGlitch()
+        {
+            Text title = FindText("Title");
+            if (title == null)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime >= nextLogoGlitchAt)
+            {
+                logoGlitchUntil = Time.unscaledTime + UnityEngine.Random.Range(0.05f, 0.09f);
+                nextLogoGlitchAt = Time.unscaledTime + UnityEngine.Random.Range(2.2f, 4.1f);
+            }
+
+            Vector2 offset = Vector2.zero;
+            if (Time.unscaledTime < logoGlitchUntil)
+            {
+                offset = new Vector2(UnityEngine.Random.Range(-1.5f, 1.5f), UnityEngine.Random.Range(-0.8f, 0.8f));
+            }
+
+            SyncTitleGhost(title, "TitleGhostCyan", new Vector2(2f, -1f) + offset, new Color(0.12f, 1f, 0.98f, 0.26f));
+            SyncTitleGhost(title, "TitleGhostMagenta", new Vector2(-2f, 1f) - offset, new Color(1f, 0.16f, 0.72f, 0.24f));
+        }
+
         private static void EnsureTextFx(Text text, Color outlineColor, Vector2 outlineDistance, Color shadowColor, Vector2 shadowDistance)
         {
             if (text == null)
@@ -638,6 +1043,38 @@ namespace Mindrift.UI
                 image.color = color;
                 image.raycastTarget = false;
             }
+        }
+
+        private static void SetDecorActive(Transform parent, string objectName, bool active)
+        {
+            if (parent == null)
+            {
+                return;
+            }
+
+            GameObject child = FindChild(parent, objectName);
+            if (child != null)
+            {
+                child.SetActive(active);
+            }
+        }
+
+        private static void SetGraphicOutline(Graphic graphic, Color color, Vector2 distance)
+        {
+            if (graphic == null)
+            {
+                return;
+            }
+
+            Outline outline = graphic.GetComponent<Outline>();
+            if (outline == null)
+            {
+                outline = graphic.gameObject.AddComponent<Outline>();
+            }
+
+            outline.effectColor = color;
+            outline.effectDistance = distance;
+            outline.useGraphicAlpha = true;
         }
 
         private void EnsureTitleGhost(Text source, string objectName, Color color, Vector2 offset)
@@ -776,7 +1213,27 @@ namespace Mindrift.UI
             EnsureFooterLink(font);
         }
 
-        private void LayoutBranding(float width, float height, bool compact)
+        private void LayoutBackgroundOverlay()
+        {
+            EnsureBackgroundOverlay();
+            if (backgroundOverlay == null)
+            {
+                return;
+            }
+
+            RectTransform rect = backgroundOverlay.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            backgroundOverlay.color = new Color(0f, 0f, 0f, 0.3f);
+        }
+
+        private void LayoutBranding(bool compact)
         {
             Text title = FindText("Title");
             if (title != null)
@@ -787,16 +1244,16 @@ namespace Mindrift.UI
                     rect.anchorMin = new Vector2(0.5f, 1f);
                     rect.anchorMax = new Vector2(0.5f, 1f);
                     rect.pivot = new Vector2(0.5f, 1f);
-                    rect.anchoredPosition = new Vector2(0f, compact ? -70f : -86f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * 0.42f, 420f, 760f), compact ? 98f : 118f);
+                    rect.anchoredPosition = new Vector2(0f, -95f);
+                    rect.sizeDelta = compact ? new Vector2(560f, 136f) : new Vector2(620f, 150f);
                 }
 
                 title.alignment = TextAnchor.MiddleCenter;
-                title.fontSize = compact ? 68 : 82;
+                title.fontSize = compact ? 74 : 84;
                 SyncTitleGhosts(title);
             }
 
-            Transform subtitleFrame = transform.Find("SubtitleFrame");
+            Transform subtitleFrame = FindChild(transform, "SubtitleFrame")?.transform;
             if (subtitleFrame != null)
             {
                 RectTransform rect = subtitleFrame as RectTransform;
@@ -805,8 +1262,8 @@ namespace Mindrift.UI
                     rect.anchorMin = new Vector2(0.5f, 1f);
                     rect.anchorMax = new Vector2(0.5f, 1f);
                     rect.pivot = new Vector2(0.5f, 1f);
-                    rect.anchoredPosition = new Vector2(0f, compact ? -154f : -182f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * 0.26f, 300f, 520f), compact ? 34f : 40f);
+                    rect.anchoredPosition = new Vector2(0f, -178f);
+                    rect.sizeDelta = compact ? new Vector2(340f, 28f) : new Vector2(390f, 30f);
                 }
             }
 
@@ -819,45 +1276,36 @@ namespace Mindrift.UI
                     rect.anchorMin = new Vector2(0.5f, 1f);
                     rect.anchorMax = new Vector2(0.5f, 1f);
                     rect.pivot = new Vector2(0.5f, 1f);
-                    rect.anchoredPosition = new Vector2(0f, compact ? -154f : -182f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * 0.26f, 300f, 520f), compact ? 34f : 40f);
+                    rect.anchoredPosition = new Vector2(0f, -178f);
+                    rect.sizeDelta = compact ? new Vector2(340f, 28f) : new Vector2(390f, 30f);
                 }
 
                 subtitle.alignment = TextAnchor.MiddleCenter;
-                subtitle.fontSize = compact ? 18 : 22;
+                subtitle.fontSize = compact ? 14 : 16;
             }
         }
 
-        private void LayoutMenuColumn(float width, float height, bool compact, bool narrow)
+        private void LayoutMenuColumn()
         {
-            Transform menuPanel = transform.Find("MenuPanel");
-            if (menuPanel != null)
+            EnsureCenterMenuLayout();
+
+            if (menuLayoutRoot != null)
             {
-                RectTransform rect = menuPanel as RectTransform;
-                if (rect != null)
-                {
-                    rect.anchorMin = new Vector2(0.5f, 0.5f);
-                    rect.anchorMax = new Vector2(0.5f, 0.5f);
-                    rect.pivot = new Vector2(0.5f, 0.5f);
-                    rect.anchoredPosition = new Vector2(0f, narrow ? -26f : -8f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * (narrow ? 0.3f : 0.23f), 300f, 470f), Mathf.Clamp(height * 0.34f, 220f, 320f));
-                }
+                menuLayoutRoot.anchorMin = new Vector2(0.5f, 0.5f);
+                menuLayoutRoot.anchorMax = new Vector2(0.5f, 0.5f);
+                menuLayoutRoot.pivot = new Vector2(0.5f, 0.5f);
+                menuLayoutRoot.anchoredPosition = Vector2.zero;
+                menuLayoutRoot.sizeDelta = new Vector2(420f, 274f);
             }
 
-            float topAnchor = narrow ? 0.7f : 0.72f;
-            float spacing = narrow ? 0.22f : 0.2f;
-            PositionButton(startButton, topAnchor);
-            PositionButton(optionsButton, topAnchor - spacing);
-            PositionButton(quitButton, topAnchor - spacing * 2f);
-
-            ResizeButton(startButton, Mathf.Clamp(width * (narrow ? 0.22f : 0.2f), 260f, 430f), narrow ? 76f : 84f);
-            ResizeButton(optionsButton, Mathf.Clamp(width * (narrow ? 0.22f : 0.2f), 260f, 430f), narrow ? 76f : 84f);
-            ResizeButton(quitButton, Mathf.Clamp(width * (narrow ? 0.22f : 0.2f), 260f, 430f), narrow ? 76f : 84f);
+            ApplyButtonLayout(startButton);
+            ApplyButtonLayout(optionsButton);
+            ApplyButtonLayout(quitButton);
         }
 
-        private void LayoutLeaderboardPanel(float width, float height, bool compact, bool narrow)
+        private void LayoutLeaderboardPanel(bool compact)
         {
-            Transform panel = transform.Find("LeaderboardPanel");
+            Transform panel = FindChild(transform, "LeaderboardPanel")?.transform;
             if (panel == null)
             {
                 return;
@@ -869,50 +1317,84 @@ namespace Mindrift.UI
                 rect.anchorMin = new Vector2(0f, 0.5f);
                 rect.anchorMax = new Vector2(0f, 0.5f);
                 rect.pivot = new Vector2(0f, 0.5f);
-                rect.anchoredPosition = new Vector2(compact ? 36f : 52f, narrow ? -6f : -18f);
-                rect.sizeDelta = new Vector2(Mathf.Clamp(width * (compact ? 0.18f : 0.2f), 210f, 360f), Mathf.Clamp(height * (compact ? 0.42f : 0.36f), 250f, 320f));
+                rect.anchoredPosition = new Vector2(120f, 0f);
+                rect.sizeDelta = compact ? new Vector2(270f, 238f) : new Vector2(290f, 250f);
+            }
+
+            if (leaderboardTitleText != null)
+            {
+                leaderboardTitleText.fontSize = compact ? 18 : 20;
+            }
+
+            for (int i = 0; i < leaderboardNameTexts.Count; i++)
+            {
+                if (leaderboardNameTexts[i] != null)
+                {
+                    leaderboardNameTexts[i].fontSize = compact ? 18 : 20;
+                }
+            }
+
+            for (int i = 0; i < leaderboardScoreTexts.Count; i++)
+            {
+                if (leaderboardScoreTexts[i] != null)
+                {
+                    leaderboardScoreTexts[i].fontSize = compact ? 18 : 20;
+                }
             }
         }
 
-        private void LayoutAuthAndStatsPanels(float width, float height, bool compact, bool narrow)
+        private void LayoutAuthAndStatsPanels(bool compact)
         {
-            Transform authPanel = transform.Find("AuthPanel");
+            EnsureRightInfoPanel();
+            if (rightInfoPanel == null)
+            {
+                return;
+            }
+
+            RectTransform rightRect = rightInfoPanel.transform as RectTransform;
+            if (rightRect != null)
+            {
+                rightRect.anchorMin = new Vector2(1f, 0.5f);
+                rightRect.anchorMax = new Vector2(1f, 0.5f);
+                rightRect.pivot = new Vector2(1f, 0.5f);
+                rightRect.anchoredPosition = new Vector2(-120f, 0f);
+                rightRect.sizeDelta = compact ? new Vector2(300f, 308f) : new Vector2(320f, 320f);
+            }
+
+            Transform authPanel = FindChild(transform, "AuthPanel")?.transform;
             if (authPanel != null)
             {
                 RectTransform rect = authPanel as RectTransform;
                 if (rect != null)
                 {
-                    rect.anchorMin = new Vector2(1f, 1f);
+                    rect.anchorMin = new Vector2(0f, 1f);
                     rect.anchorMax = new Vector2(1f, 1f);
-                    rect.pivot = new Vector2(1f, 1f);
-                    rect.anchoredPosition = new Vector2(compact ? -34f : -48f, compact ? -42f : -56f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * (compact ? 0.25f : 0.19f), 250f, 360f), compact ? 244f : 300f);
+                    rect.pivot = new Vector2(0.5f, 1f);
+                    rect.anchoredPosition = new Vector2(0f, -18f);
+                    rect.sizeDelta = new Vector2(-28f, compact ? 186f : 194f);
                 }
 
-                LayoutAuthPanelContents(authPanel, compact);
+                LayoutAuthPanelContents(authPanel, true);
             }
 
-            Transform statsPanel = transform.Find("StatsPanel");
+            Transform statsPanel = FindChild(transform, "StatsPanel")?.transform;
             if (statsPanel != null)
             {
                 RectTransform rect = statsPanel as RectTransform;
                 if (rect != null)
                 {
-                    float authHeight = compact ? 244f : 300f;
-                    float statsHeight = compact ? 210f : 260f;
-                    float gap = compact ? 12f : 18f;
-                    rect.anchorMin = new Vector2(1f, 1f);
-                    rect.anchorMax = new Vector2(1f, 1f);
-                    rect.pivot = new Vector2(1f, 1f);
-                    rect.anchoredPosition = new Vector2(compact ? -34f : -48f, compact ? -(42f + authHeight + gap) : -(56f + authHeight + gap));
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * (compact ? 0.25f : 0.19f), 250f, 360f), statsHeight);
+                    rect.anchorMin = new Vector2(0f, 0f);
+                    rect.anchorMax = new Vector2(1f, 0f);
+                    rect.pivot = new Vector2(0.5f, 0f);
+                    rect.anchoredPosition = new Vector2(0f, 14f);
+                    rect.sizeDelta = new Vector2(-28f, 108f);
                 }
 
-                LayoutStatsPanelContents(statsPanel, compact);
+                LayoutStatsPanelContents(statsPanel, true);
             }
         }
 
-        private void LayoutFooter(float width, bool compact, bool narrow)
+        private void LayoutFooter(bool compact)
         {
             Text footerText = FindText("FooterHints");
             if (footerText != null)
@@ -923,12 +1405,12 @@ namespace Mindrift.UI
                     rect.anchorMin = new Vector2(0.5f, 0f);
                     rect.anchorMax = new Vector2(0.5f, 0f);
                     rect.pivot = new Vector2(0.5f, 0f);
-                    rect.anchoredPosition = new Vector2(0f, compact ? 16f : 22f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * 0.44f, 360f, 820f), compact ? 38f : 30f);
+                    rect.anchoredPosition = new Vector2(0f, 18f);
+                    rect.sizeDelta = new Vector2(640f, 20f);
                 }
 
-                footerText.fontSize = compact ? 14 : 18;
-                footerText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                footerText.fontSize = compact ? 11 : 12;
+                footerText.horizontalOverflow = HorizontalWrapMode.Overflow;
                 footerText.verticalOverflow = VerticalWrapMode.Overflow;
             }
 
@@ -940,14 +1422,14 @@ namespace Mindrift.UI
                     rect.anchorMin = new Vector2(0.5f, 0f);
                     rect.anchorMax = new Vector2(0.5f, 0f);
                     rect.pivot = new Vector2(0.5f, 0f);
-                    rect.anchoredPosition = new Vector2(0f, compact ? 52f : 56f);
-                    rect.sizeDelta = new Vector2(Mathf.Clamp(width * (narrow ? 0.28f : 0.24f), 280f, 520f), 30f);
+                    rect.anchoredPosition = new Vector2(0f, 38f);
+                    rect.sizeDelta = new Vector2(260f, 24f);
                 }
 
                 Text linkText = footerLinkButton.GetComponentInChildren<Text>(true);
                 if (linkText != null)
                 {
-                    linkText.fontSize = compact ? 15 : 18;
+                    linkText.fontSize = compact ? 11 : 12;
                 }
             }
         }
@@ -959,18 +1441,18 @@ namespace Mindrift.UI
             {
                 title.color = new Color(0.96f, 0.98f, 1f, 0.98f);
                 title.fontStyle = FontStyle.Bold;
-                EnsureTextFx(title, new Color(0f, 0.02f, 0.05f, 0.96f), new Vector2(2f, -2f), new Color(0.1f, 0.95f, 1f, 0.55f), new Vector2(0f, -1f));
-                EnsureTitleGhost(title, "TitleGhostCyan", new Color(0.12f, 1f, 0.98f, 0.55f), new Vector2(8f, -2f));
-                EnsureTitleGhost(title, "TitleGhostMagenta", new Color(1f, 0.16f, 0.72f, 0.52f), new Vector2(-8f, 2f));
+                EnsureTextFx(title, new Color(0f, 0.02f, 0.05f, 0.96f), new Vector2(2f, -2f), new Color(0.12f, 1f, 0.98f, 0.18f), new Vector2(0f, -1f));
+                EnsureTitleGhost(title, "TitleGhostCyan", new Color(0.12f, 1f, 0.98f, 0.22f), new Vector2(2f, -1f));
+                EnsureTitleGhost(title, "TitleGhostMagenta", new Color(1f, 0.16f, 0.72f, 0.2f), new Vector2(-2f, 1f));
                 SyncTitleGhosts(title);
             }
 
             Text subtitle = FindText("Subtitle");
             if (subtitle != null)
             {
-                subtitle.color = new Color(0.66f, 0.98f, 1f, 0.98f);
+                subtitle.color = new Color(0.84f, 0.92f, 0.98f, 0.92f);
                 subtitle.fontStyle = FontStyle.Bold;
-                EnsureTextFx(subtitle, new Color(0.01f, 0.02f, 0.06f, 0.95f), new Vector2(1f, -1f), new Color(1f, 0.2f, 0.7f, 0.4f), new Vector2(-1f, 0f));
+                EnsureTextFx(subtitle, new Color(0.01f, 0.02f, 0.06f, 0.92f), new Vector2(1f, -1f), new Color(0.12f, 1f, 0.98f, 0.08f), new Vector2(0f, -1f));
             }
 
             GameObject subtitleFrame = FindChild(transform, "SubtitleFrame");
@@ -982,9 +1464,11 @@ namespace Mindrift.UI
                     frameImage = subtitleFrame.AddComponent<Image>();
                 }
 
-                frameImage.color = new Color(0.01f, 0.04f, 0.08f, 0.34f);
-                EnsureDecorImage(subtitleFrame.transform, "TopAccent", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(8f, -2f), new Vector2(-40f, 0f), new Color(0.12f, 1f, 0.98f, 0.9f));
-                EnsureDecorImage(subtitleFrame.transform, "BottomAccent", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(32f, 0f), new Vector2(-8f, 2f), new Color(1f, 0.22f, 0.68f, 0.7f));
+                frameImage.color = new Color(0.01f, 0.04f, 0.08f, 0.18f);
+                SetGraphicOutline(frameImage, new Color(0.12f, 1f, 0.98f, 0.18f), new Vector2(1f, -1f));
+                EnsureDecorImage(subtitleFrame.transform, "CornerAccent", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -10f), new Vector2(12f, 0f), new Color(1f, 0.2f, 0.72f, 0.76f));
+                SetDecorActive(subtitleFrame.transform, "TopAccent", false);
+                SetDecorActive(subtitleFrame.transform, "BottomAccent", false);
             }
         }
 
@@ -1002,11 +1486,12 @@ namespace Mindrift.UI
                 image = menuPanel.AddComponent<Image>();
             }
 
-            image.color = new Color(0.01f, 0.03f, 0.07f, 0.24f);
-            EnsureDecorImage(menuPanel.transform, "TopAccent", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(10f, -2f), new Vector2(-64f, 0f), new Color(0.1f, 0.95f, 1f, 0.92f));
-            EnsureDecorImage(menuPanel.transform, "BottomAccent", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(56f, 0f), new Vector2(-12f, 2f), new Color(1f, 0.18f, 0.72f, 0.78f));
-            EnsureDecorImage(menuPanel.transform, "RightAccent", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-3f, 24f), new Vector2(0f, -22f), new Color(0.12f, 1f, 0.98f, 0.55f));
-            EnsureDecorImage(menuPanel.transform, "CornerNode", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -14f), new Vector2(18f, 0f), new Color(1f, 0.18f, 0.72f, 0.75f));
+            image.color = new Color(0.01f, 0.03f, 0.07f, 0.08f);
+            SetGraphicOutline(image, new Color(0.12f, 1f, 0.98f, 0.12f), new Vector2(1f, -1f));
+            SetDecorActive(menuPanel.transform, "TopAccent", false);
+            SetDecorActive(menuPanel.transform, "BottomAccent", false);
+            SetDecorActive(menuPanel.transform, "RightAccent", false);
+            SetDecorActive(menuPanel.transform, "CornerNode", false);
         }
 
         private void StylePanelShell(GameObject panelObject, Color primary, Color secondary, float backgroundAlpha)
@@ -1020,13 +1505,28 @@ namespace Mindrift.UI
             if (panelImage != null)
             {
                 panelImage.color = new Color(0.01f, 0.04f, 0.08f, backgroundAlpha);
+                SetGraphicOutline(panelImage, primary, new Vector2(1f, -1f));
             }
 
-            EnsureDecorImage(panelObject.transform, "TopAccent", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(10f, -2f), new Vector2(-44f, 0f), primary);
-            EnsureDecorImage(panelObject.transform, "BottomAccent", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(26f, 0f), new Vector2(-10f, 2f), secondary);
-            EnsureDecorImage(panelObject.transform, "SideAccent", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-3f, 18f), new Vector2(0f, -18f), new Color(primary.r, primary.g, primary.b, primary.a * 0.5f));
-            EnsureDecorImage(panelObject.transform, "CornerTopLeft", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -16f), new Vector2(20f, 0f), secondary);
-            EnsureDecorImage(panelObject.transform, "CornerBottomRight", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-22f, 0f), new Vector2(0f, 20f), new Color(primary.r, primary.g, primary.b, primary.a * 0.7f));
+            SetDecorActive(panelObject.transform, "TopAccent", false);
+            SetDecorActive(panelObject.transform, "BottomAccent", false);
+            SetDecorActive(panelObject.transform, "SideAccent", false);
+            EnsureDecorImage(panelObject.transform, "CornerTopLeft", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -12f), new Vector2(14f, 0f), secondary);
+            SetDecorActive(panelObject.transform, "CornerBottomRight", false);
+        }
+
+        private void StyleSubPanel(GameObject panelObject)
+        {
+            if (panelObject == null)
+            {
+                return;
+            }
+
+            Image image = panelObject.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = new Color(0f, 0f, 0f, 0f);
+            }
         }
 
         private void StyleFooter()
@@ -1034,8 +1534,8 @@ namespace Mindrift.UI
             Text footerText = FindText("FooterHints");
             if (footerText != null)
             {
-                footerText.color = new Color(0.7f, 0.98f, 1f, 0.95f);
-                EnsureTextFx(footerText, new Color(0.01f, 0.02f, 0.07f, 0.9f), new Vector2(1f, -1f), new Color(0.16f, 0.95f, 1f, 0.35f), new Vector2(0f, -1f));
+                footerText.color = new Color(0.84f, 0.9f, 0.96f, 0.72f);
+                EnsureTextFx(footerText, new Color(0.01f, 0.02f, 0.07f, 0.75f), new Vector2(1f, -1f), new Color(0f, 0f, 0f, 0f), Vector2.zero);
             }
 
             if (footerLinkButton != null)
@@ -1043,18 +1543,19 @@ namespace Mindrift.UI
                 Image image = footerLinkButton.GetComponent<Image>();
                 if (image != null)
                 {
-                    image.color = new Color(0.02f, 0.06f, 0.1f, 0.58f);
+                    image.color = new Color(0.02f, 0.04f, 0.06f, 0.22f);
+                    SetGraphicOutline(image, new Color(0.12f, 1f, 0.98f, 0.14f), new Vector2(1f, -1f));
                 }
 
-                EnsureDecorImage(footerLinkButton.transform, "TopAccent", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(8f, -2f), new Vector2(-28f, 0f), new Color(0.12f, 1f, 0.98f, 0.92f));
-                EnsureDecorImage(footerLinkButton.transform, "BottomAccent", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(22f, 0f), new Vector2(-8f, 2f), new Color(1f, 0.22f, 0.7f, 0.72f));
-                EnsureDecorImage(footerLinkButton.transform, "SideAccent", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 8f), new Vector2(3f, -8f), new Color(0.12f, 1f, 0.98f, 0.42f));
+                SetDecorActive(footerLinkButton.transform, "TopAccent", false);
+                SetDecorActive(footerLinkButton.transform, "BottomAccent", false);
+                SetDecorActive(footerLinkButton.transform, "SideAccent", false);
 
                 Text linkLabel = footerLinkButton.GetComponentInChildren<Text>(true);
                 if (linkLabel != null)
                 {
-                    linkLabel.color = new Color(0.86f, 0.98f, 1f, 0.98f);
-                    EnsureTextFx(linkLabel, new Color(0.01f, 0.03f, 0.06f, 0.92f), new Vector2(1f, -1f), new Color(1f, 0.18f, 0.72f, 0.36f), new Vector2(-1f, 0f));
+                    linkLabel.color = new Color(0.86f, 0.92f, 0.98f, 0.7f);
+                    EnsureTextFx(linkLabel, new Color(0.01f, 0.03f, 0.06f, 0.75f), new Vector2(1f, -1f), new Color(0f, 0f, 0f, 0f), Vector2.zero);
                 }
             }
         }
@@ -1115,12 +1616,12 @@ namespace Mindrift.UI
 
         private void LayoutAuthPanelContents(Transform authPanel, bool compact)
         {
-            SetTopAnchoredRect(FindChild(authPanel, "AuthHeader"), 22f, 36f);
-            SetTopAnchoredRect(FindChild(authPanel, "AuthStatus"), compact ? 56f : 62f, 28f);
-            SetTopAnchoredRect(FindChild(authPanel, "AuthHint"), compact ? 84f : 96f, compact ? 44f : 52f);
-            SetTopAnchoredRect(authUsernameRow, compact ? 136f : 162f, 32f);
-            SetTopAnchoredRect(authIdentifierRow, compact ? 172f : 206f, 32f);
-            SetTopAnchoredRect(authPasswordRow, compact ? 208f : 250f, 32f);
+            SetTopAnchoredRect(FindChild(authPanel, "AuthHeader"), 6f, 28f);
+            SetTopAnchoredRect(FindChild(authPanel, "AuthStatus"), 34f, 24f);
+            SetTopAnchoredRect(FindChild(authPanel, "AuthHint"), 58f, compact ? 30f : 36f);
+            SetTopAnchoredRect(authUsernameRow, 92f, 24f);
+            SetTopAnchoredRect(authIdentifierRow, 120f, 24f);
+            SetTopAnchoredRect(authPasswordRow, 148f, 24f);
 
             if (authMessageText != null)
             {
@@ -1130,26 +1631,110 @@ namespace Mindrift.UI
                     messageRect.anchorMin = new Vector2(0f, 0f);
                     messageRect.anchorMax = new Vector2(1f, 0f);
                     messageRect.pivot = new Vector2(0.5f, 0f);
-                    messageRect.anchoredPosition = new Vector2(0f, compact ? 56f : 62f);
-                    messageRect.sizeDelta = new Vector2(-36f, compact ? 36f : 42f);
+                    messageRect.anchoredPosition = new Vector2(0f, 42f);
+                    messageRect.sizeDelta = new Vector2(-20f, 22f);
                 }
 
-                authMessageText.fontSize = compact ? 13 : 15;
+                authMessageText.fontSize = 11;
                 authMessageText.horizontalOverflow = HorizontalWrapMode.Wrap;
             }
 
-            PositionActionButton(authSignInButton, new Vector2(0.05f, 0f), new Vector2(0.47f, 0f), 18f, 54f);
-            PositionActionButton(authRegisterButton, new Vector2(0.53f, 0f), new Vector2(0.95f, 0f), 18f, 54f);
-            PositionActionButton(authSignOutButton, new Vector2(0.05f, 0f), new Vector2(0.95f, 0f), 18f, 54f);
+            PositionActionButton(authSignInButton, new Vector2(0.05f, 0f), new Vector2(0.47f, 0f), 8f, 34f);
+            PositionActionButton(authRegisterButton, new Vector2(0.53f, 0f), new Vector2(0.95f, 0f), 8f, 34f);
+            PositionActionButton(authSignOutButton, new Vector2(0.05f, 0f), new Vector2(0.95f, 0f), 8f, 34f);
+
+            SetAuthFontSizes(17, 11, 11, 11);
         }
 
         private void LayoutStatsPanelContents(Transform statsPanel, bool compact)
         {
-            SetTopAnchoredRect(FindChild(statsPanel, "StatsHeader"), 22f, 36f);
-            SetTopAnchoredRect(FindChild(statsPanel, "TotalRunsRow"), compact ? 74f : 82f, 36f);
-            SetTopAnchoredRect(FindChild(statsPanel, "TotalDeathsRow"), compact ? 110f : 126f, 36f);
-            SetTopAnchoredRect(FindChild(statsPanel, "TopScoreRow"), compact ? 146f : 170f, 36f);
-            SetTopAnchoredRect(FindChild(statsPanel, "TopHeightRow"), compact ? 182f : 214f, 36f);
+            SetTopAnchoredRect(FindChild(statsPanel, "StatsHeader"), 2f, 24f);
+            SetTopAnchoredRect(FindChild(statsPanel, "TotalRunsRow"), 28f, 18f);
+            SetTopAnchoredRect(FindChild(statsPanel, "TotalDeathsRow"), 48f, 18f);
+            SetTopAnchoredRect(FindChild(statsPanel, "TopScoreRow"), 68f, 18f);
+            SetTopAnchoredRect(FindChild(statsPanel, "TopHeightRow"), 88f, 18f);
+
+            SetStatsFontSizes(16, 13, 13);
+        }
+
+        private void SetAuthFontSizes(int headerSize, int statusSize, int bodySize, int inputSize)
+        {
+            if (authHeaderText != null) authHeaderText.fontSize = headerSize;
+            if (authStatusText != null) authStatusText.fontSize = statusSize;
+            if (authHintText != null) authHintText.fontSize = bodySize;
+            if (authMessageText != null) authMessageText.fontSize = bodySize;
+            SetInputRowFontSize(authUsernameRow, bodySize, inputSize);
+            SetInputRowFontSize(authIdentifierRow, bodySize, inputSize);
+            SetInputRowFontSize(authPasswordRow, bodySize, inputSize);
+            SetButtonLabelFontSize(authSignInButton, 16);
+            SetButtonLabelFontSize(authRegisterButton, 16);
+            SetButtonLabelFontSize(authSignOutButton, 16);
+        }
+
+        private void SetStatsFontSizes(int headerSize, int labelSize, int valueSize)
+        {
+            if (statsHeaderText != null) statsHeaderText.fontSize = headerSize;
+            SetStatsRowFontSize("TotalRunsRow", labelSize, valueSize);
+            SetStatsRowFontSize("TotalDeathsRow", labelSize, valueSize);
+            SetStatsRowFontSize("TopScoreRow", labelSize, valueSize);
+            SetStatsRowFontSize("TopHeightRow", labelSize, valueSize);
+        }
+
+        private void SetStatsRowFontSize(string rowName, int labelSize, int valueSize)
+        {
+            GameObject rowObject = FindChild(transform, rowName) ?? FindChild(statsHeaderText != null ? statsHeaderText.transform.parent : null, rowName);
+            if (rowObject == null)
+            {
+                return;
+            }
+
+            Text[] texts = rowObject.GetComponentsInChildren<Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i].name.EndsWith("Label", StringComparison.OrdinalIgnoreCase))
+                {
+                    texts[i].fontSize = labelSize;
+                }
+                else if (texts[i].name.EndsWith("Value", StringComparison.OrdinalIgnoreCase))
+                {
+                    texts[i].fontSize = valueSize;
+                }
+            }
+        }
+
+        private static void SetInputRowFontSize(GameObject rowObject, int labelSize, int inputSize)
+        {
+            if (rowObject == null)
+            {
+                return;
+            }
+
+            Text[] texts = rowObject.GetComponentsInChildren<Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i].name.EndsWith("Label", StringComparison.OrdinalIgnoreCase))
+                {
+                    texts[i].fontSize = labelSize;
+                }
+                else if (texts[i].name == "Placeholder" || texts[i].name == "Text")
+                {
+                    texts[i].fontSize = inputSize;
+                }
+            }
+        }
+
+        private static void SetButtonLabelFontSize(Button button, int size)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Text label = button.GetComponentInChildren<Text>(true);
+            if (label != null)
+            {
+                label.fontSize = size;
+            }
         }
 
         public void OpenWebsiteLink()
@@ -1164,7 +1749,7 @@ namespace Mindrift.UI
 
         private void EnsureAuthPanel()
         {
-            Transform existing = transform.Find("AuthPanel");
+            Transform existing = FindChild(transform, "AuthPanel")?.transform;
             if (existing != null)
             {
                 CacheAuthControls(existing);
@@ -1366,7 +1951,7 @@ namespace Mindrift.UI
 
         private void EnsureStatsPanel()
         {
-            Transform existing = transform.Find("StatsPanel");
+            Transform existing = FindChild(transform, "StatsPanel")?.transform;
             if (existing != null)
             {
                 CacheStatsTexts(existing);
@@ -1441,7 +2026,7 @@ namespace Mindrift.UI
 
         private void EnsureLeaderboardPanel()
         {
-            Transform existing = transform.Find("LeaderboardPanel");
+            Transform existing = FindChild(transform, "LeaderboardPanel")?.transform;
             if (existing != null)
             {
                 CacheLeaderboardTexts(existing);
@@ -1906,8 +2491,22 @@ namespace Mindrift.UI
                 return null;
             }
 
-            Transform child = parent.Find(name);
-            return child != null ? child.gameObject : null;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+                if (string.Equals(child.name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return child.gameObject;
+                }
+
+                GameObject nestedMatch = FindChild(child, name);
+                if (nestedMatch != null)
+                {
+                    return nestedMatch;
+                }
+            }
+
+            return null;
         }
 
         private static T FindComponentUnder<T>(Transform parent, string name) where T : Component
