@@ -1,61 +1,136 @@
 # MINDRIFT
 
-Prototype Unity with a psychological/cyberpunk vibe.
+MINDRIFT est un prototype action-game Unity (HDRP) avec une ambiance cyber/psyche, un main menu stylise, des options completes, une couche online API (PHP JSON), et une base Discord Rich Presence.
 
-## Environment
+## Environnement
 
 - Unity: `6000.3.10f1`
-- Target: PC (keyboard/mouse + controller)
+- Pipeline: `HDRP`
+- Input: `Input System` (pas d ancien Input Manager)
+- Plateforme cible: PC (`clavier/souris + manette`)
 
-## Quick Start
+## Demarrage rapide
 
-1. Open the project in Unity.
-2. Verify scenes in `Build Settings`:
+1. Ouvrir le projet dans Unity.
+2. Verifier les scenes dans `Build Settings`:
    - `Assets/Scenes/MainMenu.unity`
    - `Assets/Scenes/Games.unity`
    - `Assets/Scenes/Break.unity`
-3. Press Play from `MainMenu`.
+3. Lancer depuis `MainMenu`.
 
-## Scene Flow
+## Flux des scenes
 
-- `MainMenu`: title screen (`Play / Options / Quit`).
-- `Games`: main gameplay scene.
-- `Break`: pause menu scene (loaded additively during gameplay).
+- `MainMenu`: navigation principale (`Play / Options / Quit`), login, leaderboard.
+- `Games`: gameplay principal.
+- `Break`: menu pause (charge additivement).
 
-## Core Rule
+## Fonctionnalites principales
 
-- Player lives are hard-capped at `3` (cannot exceed 3 in runtime or inspector).
+### Main Menu / UX
 
-## Controls
+- Curseur force visible + deverrouille dans le menu.
+- Layout ergonomique (titre centre en haut, actions au centre, panels lateraux).
+- `LeaderBoard` alimente par les donnees API reelles (plus de seed fake locale dans la liste principale).
+- Panneau account oriente connexion API.
+- `FooterHints` masque dans le MainMenu.
+
+### Menu Options
+
+- Onglets: `Audio`, `Display`, `Controls`.
+- Audio: `Master`, `Music`, `SFX`.
+- Display: `Fullscreen`, `Quality`.
+- Controls: `Controller Sensitivity`, `Invert Y`, `Controller Vibration`.
+- Navigation clavier/manette/souris supportee.
+
+### Gameplay / Systeme
+
+- Vibration manette declenchee a la mort (si activee).
+- Limite de vies conservee cote gameplay.
+- Systeme de stats locales toujours present.
+
+### Online (nekuzaky API)
+
+Architecture modulaire sous `Assets/_MINDRIFT/Scripts/Online/`:
+
+- `Core`: `ApiConfig`, `ApiClient`, `ApiRoutes`, `JsonHelper`
+- `Auth`: `AuthManager`, `TokenStorage`, `SessionBootstrap`
+- `Models`: DTO login/user/stats/settings/run/leaderboard
+- `MindriftOnlineService`: facade online unique
+
+Capacites actuelles:
+
+- Login token-based (`email + mot de passe`)
+- Stockage token local + restauration de session via `/auth/me.php`
+- Fetch profil / stats / leaderboard
+- Fetch + save des settings
+- Envoi de run (`save-run`)
+
+## Configuration API
+
+### Base URL
+
+- Defaut: `https://nekuzaky.com/api`
+- Fichier: `Assets/_MINDRIFT/Scripts/Online/Core/ApiConfig.cs`
+
+### Surcharge via asset (recommande)
+
+Creer un asset:
+
+1. `Create > MINDRIFT > Online > API Config`
+2. Nommer exactement l asset: `MindriftApiConfig`
+3. Le placer dans: `Assets/Resources/`
+
+Sans asset, un fallback runtime est utilise.
+
+### Endpoints centralises
+
+- `auth/login.php`
+- `auth/me.php`
+- `mindrift/my-stats.php`
+- `mindrift/leaderboard.php`
+- `mindrift/settings-get.php`
+- `mindrift/settings-save.php`
+- `mindrift/save-run.php`
+
+## Discord Rich Presence
+
+- Config ScriptableObject: `MindriftDiscordPresenceConfig`
+- Asset attendu: `Assets/Resources/MindriftDiscordPresenceConfig.asset`
+- Application ID deja configure dans le projet.
+- Le code compile en mode SDK uniquement avec le define:
+  - `MINDRIFT_DISCORD_SDK`
+
+## Controles
 
 ### MainMenu
 
-- Keyboard: `Arrows`/`WASD` to navigate, `Enter` to confirm.
-- Controller: `D-Pad`/stick to navigate, `A` to confirm.
+- Clavier: `WASD` / fleches + `Enter`
+- Manette: stick/D-pad + `A`
+- Souris: navigation/clic UI
 
 ### Gameplay / Pause
 
-- `Esc` (keyboard) or `Start` (controller): pause / resume.
+- `Esc` (clavier) ou `Start` (manette): pause/reprise
 
-## Main UI Scripts
+## Contrat backend attendu (resume)
+
+Reponse API attendue:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {}
+}
+```
+
+Le login doit retourner un token exploitable (`token`, `access_token`, etc.) et idealement un user avec identite (`display_name` ou `username`) pour eviter l affichage generique.
+
+## Scripts cles
 
 - `Assets/_MINDRIFT/Scripts/UI/MainMenuController.cs`
-  - Main menu logic, button binding, and menu navigation.
 - `Assets/_MINDRIFT/Scripts/UI/OptionsMenuController.cs`
-  - Builds and manages the options panel.
-- `Assets/_MINDRIFT/Scripts/UI/MenuSelectableFeedback.cs`
-  - Visual feedback for selectable UI elements.
-- `Assets/_MINDRIFT/Scripts/UI/GameplayPauseController.cs`
-  - Pause scene loading and return-to-menu flow.
-
-## Current MainMenu State
-
-- Stronger visual hierarchy (title, subtitle area, framed center panel).
-- Explicit `Play / Options / Quit` block with improved readability.
-- Clearer `hover/selected/pressed` feedback.
-- Better UI/background separation (overlay + vignette + subtle accents).
-- Footer navigation hints integrated in scene.
-
-## Project Note
-
-Polish passes are done with strict scope (example: `MainMenu` only) to avoid gameplay regressions.
+- `Assets/_MINDRIFT/Scripts/UI/SettingsManager.cs`
+- `Assets/_MINDRIFT/Scripts/Online/Auth/AuthManager.cs`
+- `Assets/_MINDRIFT/Scripts/Online/MindriftOnlineService.cs`
+- `Assets/_MINDRIFT/Scripts/Online/Presence/DiscordRichPresenceManager.cs`
