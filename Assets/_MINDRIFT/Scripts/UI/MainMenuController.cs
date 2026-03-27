@@ -2,8 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Mindrift.Auth;
 using Mindrift.Core;
+using Mindrift.Online;
+using Mindrift.Online.Core;
+using Mindrift.Online.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -45,8 +49,8 @@ namespace Mindrift.UI
         [SerializeField] private Color startTransitionColor = new Color(0.01f, 0.03f, 0.08f, 1f);
 
         [Header("Auth")]
-        [SerializeField] private string authGuestHintText = "Create a local account now. Your site API can replace this service later.";
-        [SerializeField] private string authConnectedHintText = "Local session active. This profile is ready to sync with your future API.";
+        [SerializeField] private string authGuestHintText = "Sign in with your nekuzaky.com account to sync runs, stats, and settings.";
+        [SerializeField] private string authConnectedHintText = "Online session active. Your profile is synced with the API.";
 
         [Header("Leaderboard")]
         [SerializeField] private string localPlayerLeaderboardName = "YOU";
@@ -94,13 +98,17 @@ namespace Mindrift.UI
         private float nextLogoGlitchAt = 1.5f;
         private float logoGlitchUntil;
         private bool isSceneTransitionRunning;
+        private MindriftOnlineService onlineService;
+        private bool isAuthRequestInFlight;
+        private bool isOnlineRefreshInFlight;
 
         private void Awake()
         {
             SettingsManager.EnsureInitialized();
             MenuInputSystemUtility.EnsureEventSystem();
             authService = AuthRuntime.Service;
-            authService.TryRestoreSession();
+            onlineService = MindriftOnlineService.Instance;
+            _ = authService.TryRestoreSessionAsync();
 
             Time.timeScale = 1f;
             Cursor.visible = true;
@@ -118,6 +126,7 @@ namespace Mindrift.UI
             optionsMenu = OptionsMenuController.EnsureForCanvas(transform);
             RefreshLeaderboardPanel();
             RefreshStatsPanel();
+            _ = RefreshOnlinePanelsAsync();
         }
 
 #if UNITY_EDITOR
@@ -141,12 +150,14 @@ namespace Mindrift.UI
             HookEvents();
             SubscribeAuthEvents(true);
             atmosphereFx = MainMenuAtmosphereFx.EnsureForCanvas(transform);
+            onlineService = MindriftOnlineService.Instance;
             MenuNavigationController.SelectDefault(this, startButton);
             ApplyResponsiveLayout(force: true);
             ApplyCyberpunkTheme();
             RefreshAuthPanel();
             RefreshLeaderboardPanel();
             RefreshStatsPanel();
+            _ = RefreshOnlinePanelsAsync();
         }
 
         private void OnDisable()
@@ -912,6 +923,7 @@ namespace Mindrift.UI
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 rect.anchoredPosition = Vector2.zero;
                 rect.sizeDelta = new Vector2(420f, 74f);
+                rect.localScale = Vector3.one;
             }
 
             LayoutElement layoutElement = button.GetComponent<LayoutElement>();
@@ -1296,6 +1308,7 @@ namespace Mindrift.UI
                 menuLayoutRoot.pivot = new Vector2(0.5f, 0.5f);
                 menuLayoutRoot.anchoredPosition = Vector2.zero;
                 menuLayoutRoot.sizeDelta = new Vector2(420f, 274f);
+                menuLayoutRoot.localScale = Vector3.one;
             }
 
             ApplyButtonLayout(startButton);
@@ -1319,6 +1332,7 @@ namespace Mindrift.UI
                 rect.pivot = new Vector2(0f, 0.5f);
                 rect.anchoredPosition = new Vector2(120f, 0f);
                 rect.sizeDelta = compact ? new Vector2(270f, 238f) : new Vector2(290f, 250f);
+                rect.localScale = Vector3.one;
             }
 
             if (leaderboardTitleText != null)
@@ -1359,6 +1373,7 @@ namespace Mindrift.UI
                 rightRect.pivot = new Vector2(1f, 0.5f);
                 rightRect.anchoredPosition = new Vector2(-120f, 0f);
                 rightRect.sizeDelta = compact ? new Vector2(300f, 308f) : new Vector2(320f, 320f);
+                rightRect.localScale = Vector3.one;
             }
 
             Transform authPanel = FindChild(transform, "AuthPanel")?.transform;
@@ -1850,7 +1865,7 @@ namespace Mindrift.UI
             if (authMessageText != null)
             {
                 string fallbackMessage = isGuest
-                    ? "Create a local account or sign in."
+                    ? "Sign in with your nekuzaky.com account."
                     : $"EMAIL: {(string.IsNullOrWhiteSpace(session.email) ? "NOT SET" : session.email)}";
                 authMessageText.text = string.IsNullOrWhiteSpace(authFeedbackMessage) ? fallbackMessage : authFeedbackMessage;
             }
@@ -1873,27 +1888,62 @@ namespace Mindrift.UI
             ConfigureButtonNavigation();
         }
 
-        private void HandleSignInPressed()
+        private async void HandleSignInPressed()
         {
+            if (isAuthRequestInFlight)
+            {
+                return;
+            }
+
             authService ??= AuthRuntime.Service;
-            AuthOperationResult result = authService.SignIn(authIdentifierInput != null ? authIdentifierInput.text : string.Empty, authPasswordInput != null ? authPasswordInput.text : string.Empty);
-            HandleAuthOperationResult(result);
+            isAuthRequestInFlight = true;
+            SetAuthButtonsInteractable(false);
+
+            if (authMessageText != null)
+            {
+                authMessageText.text = "Signing in...";
+            }
+
+            try
+            {
+                AuthOperationResult result = await authService.SignInAsync(
+                    authIdentifierInput != null ? authIdentifierInput.text : string.Empty,
+                    authPasswordInput != null ? authPasswordInput.text : string.Empty);
+                HandleAuthOperationResult(result);
+            }
+            finally
+            {
+                isAuthRequestInFlight = false;
+                SetAuthButtonsInteractable(true);
+            }
         }
 
         private void HandleRegisterPressed()
         {
-            authService ??= AuthRuntime.Service;
-            AuthOperationResult result = authService.Register(
-                authUsernameInput != null ? authUsernameInput.text : string.Empty,
-                authIdentifierInput != null ? authIdentifierInput.text : string.Empty,
-                authPasswordInput != null ? authPasswordInput.text : string.Empty);
-            HandleAuthOperationResult(result);
+            authFeedbackMessage = "Create your account on nekuzaky.com, then return here and sign in.";
+            OpenWebsiteLink();
+            RefreshAuthPanel();
         }
 
-        private void HandleSignOutPressed()
+        private async void HandleSignOutPressed()
         {
+            if (isAuthRequestInFlight)
+            {
+                return;
+            }
+
             authService ??= AuthRuntime.Service;
-            authService.SignOut();
+            isAuthRequestInFlight = true;
+            SetAuthButtonsInteractable(false);
+            try
+            {
+                await authService.SignOutAsync();
+            }
+            finally
+            {
+                isAuthRequestInFlight = false;
+                SetAuthButtonsInteractable(true);
+            }
         }
 
         private void HandleAuthOperationResult(AuthOperationResult result)
@@ -1912,6 +1962,7 @@ namespace Mindrift.UI
             if (result.success)
             {
                 ClearAuthInputs(clearUsername: false);
+                _ = RefreshOnlinePanelsAsync();
             }
 
             RefreshAuthPanel();
@@ -1929,6 +1980,85 @@ namespace Mindrift.UI
             RefreshAuthPanel();
             RefreshLeaderboardPanel();
             RefreshStatsPanel();
+            _ = RefreshOnlinePanelsAsync();
+        }
+
+        private void SetAuthButtonsInteractable(bool interactable)
+        {
+            if (authSignInButton != null)
+            {
+                authSignInButton.interactable = interactable;
+            }
+
+            if (authRegisterButton != null)
+            {
+                authRegisterButton.interactable = interactable;
+            }
+
+            if (authSignOutButton != null)
+            {
+                authSignOutButton.interactable = interactable;
+            }
+        }
+
+        private async Task RefreshOnlinePanelsAsync()
+        {
+            if (isOnlineRefreshInFlight)
+            {
+                return;
+            }
+
+            authService ??= AuthRuntime.Service;
+            onlineService ??= MindriftOnlineService.Instance;
+            if (authService == null || onlineService == null)
+            {
+                return;
+            }
+
+            AuthSessionData session = authService.CurrentSession ?? AuthSessionData.CreateGuest();
+            if (session.isGuest)
+            {
+                isOnlineRefreshInFlight = true;
+                try
+                {
+                    ApiRequestResult<LeaderboardResponseData> guestLeaderboardResult = await onlineService.FetchLeaderboardAsync();
+                    if (!guestLeaderboardResult.Success && string.IsNullOrWhiteSpace(authFeedbackMessage))
+                    {
+                        authFeedbackMessage = "Failed to load leaderboard.";
+                    }
+                }
+                finally
+                {
+                    isOnlineRefreshInFlight = false;
+                }
+
+                RefreshStatsPanel();
+                RefreshLeaderboardPanel();
+                return;
+            }
+
+            isOnlineRefreshInFlight = true;
+            try
+            {
+                ApiRequestResult<MindriftStatsDto> statsResult = await onlineService.FetchMyStatsAsync();
+                if (!statsResult.Success && statsResult.IsUnauthorized)
+                {
+                    authFeedbackMessage = "Session expired. Please sign in again.";
+                }
+
+                ApiRequestResult<LeaderboardResponseData> leaderboardResult = await onlineService.FetchLeaderboardAsync();
+                if (!leaderboardResult.Success && !leaderboardResult.IsUnauthorized && string.IsNullOrWhiteSpace(authFeedbackMessage))
+                {
+                    authFeedbackMessage = "Failed to load leaderboard.";
+                }
+            }
+            finally
+            {
+                isOnlineRefreshInFlight = false;
+                RefreshAuthPanel();
+                RefreshStatsPanel();
+                RefreshLeaderboardPanel();
+            }
         }
 
         private void ClearAuthInputs(bool clearUsername)
@@ -1996,7 +2126,13 @@ namespace Mindrift.UI
         {
             EnsureStatsPanel();
 
-            PlayerStatsData stats = PlayerStatsStorage.Load();
+            PlayerStatsData localStats = PlayerStatsStorage.Load();
+            PlayerStatsData stats = localStats;
+            if (onlineService != null && onlineService.CachedMyStats != null && !(authService?.CurrentSession?.isGuest ?? true))
+            {
+                stats = onlineService.CachedMyStats.ToLocalStatsData();
+            }
+
             AuthSessionData session = (authService ?? AuthRuntime.Service).CurrentSession ?? AuthSessionData.CreateGuest();
             if (statsHeaderText != null)
             {
@@ -2115,6 +2251,22 @@ namespace Mindrift.UI
         private List<(string name, int score)> BuildLeaderboardEntries()
         {
             List<(string name, int score)> entries = new List<(string name, int score)>();
+
+            if (onlineService != null && onlineService.CachedLeaderboard != null && onlineService.CachedLeaderboard.Count > 0)
+            {
+                for (int i = 0; i < onlineService.CachedLeaderboard.Count; i++)
+                {
+                    LeaderboardEntryDto onlineEntry = onlineService.CachedLeaderboard[i];
+                    if (onlineEntry == null)
+                    {
+                        continue;
+                    }
+
+                    onlineEntry.Sanitize();
+                    entries.Add((onlineEntry.ResolveDisplayName(), onlineEntry.score));
+                }
+            }
+
             for (int i = 0; i < fallbackLeaderboardEntries.Count; i++)
             {
                 LeaderboardSeedEntry entry = fallbackLeaderboardEntries[i];
@@ -2126,7 +2278,9 @@ namespace Mindrift.UI
                 entries.Add((entry.playerName.Trim(), Mathf.Max(0, entry.score)));
             }
 
-            PlayerStatsData stats = PlayerStatsStorage.Load();
+            PlayerStatsData stats = onlineService != null && onlineService.CachedMyStats != null
+                ? onlineService.CachedMyStats.ToLocalStatsData()
+                : PlayerStatsStorage.Load();
             AuthSessionData session = (authService ?? AuthRuntime.Service).CurrentSession ?? AuthSessionData.CreateGuest();
             string localName = session != null && !session.isGuest
                 ? session.DisplayName

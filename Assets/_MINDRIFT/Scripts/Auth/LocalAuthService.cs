@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Mindrift.Auth
@@ -196,6 +198,27 @@ namespace Mindrift.Auth
         public void SignOut()
         {
             SetCurrentSession(AuthSessionData.CreateGuest(), saveToDisk: true);
+        }
+
+        public Task<AuthSessionData> TryRestoreSessionAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(TryRestoreSession());
+        }
+
+        public Task<AuthOperationResult> RegisterAsync(string username, string email, string password, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Register(username, email, password));
+        }
+
+        public Task<AuthOperationResult> SignInAsync(string identifier, string password, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(SignIn(identifier, password));
+        }
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default)
+        {
+            SignOut();
+            return Task.CompletedTask;
         }
 
         private void SetCurrentSession(AuthSessionData session, bool saveToDisk)
